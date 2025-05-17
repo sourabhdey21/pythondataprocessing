@@ -36,7 +36,7 @@ jobs:
 
       - name: Create namespace if not exists
         run: |
-          sudo kubectl apply -f kubernets/manifest/namespace.yaml
+           kubectl apply -f kubernets/manifest/namespace.yaml
 
       - name: Deploy to Kubernetes
         env:
@@ -47,9 +47,9 @@ jobs:
           sed -i "s|IMAGE_TO_REPLACE|$ECR_REPOSITORY/dataprocessingapp:$IMAGE_TAG|g" kubernets/manifest/deployment.yaml
           
           # Apply Kubernetes manifests
-          sudo kubectl apply -f kubernets/manifest/deployment.yaml -n data-processing
-          sudo kubectl apply -f kubernets/manifest/service.yaml -n data-processing
+           kubectl apply -f kubernets/manifest/deployment.yaml -n data-processing
+           kubectl apply -f kubernets/manifest/service.yaml -n data-processing
 
       - name: Verify deployment
         run: |
-          sudo kubectl rollout status deployment/data-processing-app -n data-processing
+          kubectl rollout status deployment/data-processing-app -n data-processing
