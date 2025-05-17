@@ -1,0 +1,29 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-processing-app
+  namespace: data-processing
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: data-processing-app
+  template:
+    metadata:
+      labels:
+        app: data-processing-app
+    spec:
+      containers:
+      - name: data-processing-app
+        image: 102338601122.dkr.ecr.ap-south-1.amazonaws.com/dataprocess:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
+        env:
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        - name: FLASK_APP
+          value: app.py
+        - name: FLASK_DEBUG
+          value: "1"
