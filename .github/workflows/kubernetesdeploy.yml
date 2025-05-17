@@ -1,0 +1,55 @@
+name: Deploy to Kubernetes
+
+on:
+  workflow_run:
+    workflows: ["Build and Push Docker Image and Deploy to self hosted kubernetes cluster"]
+    types:
+      - completed
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set KUBECONFIG path
+        env:
+          KUBECONFIG: ${{ secrets.KUBECONFIG }}
+        run: |
+          echo "Using kubeconfig from secrets"
+
+      - name: Create namespace if not exists
+        run: |
+          sudo kubectl apply -f kubernets/manifest/namespace.yaml
+
+      - name: Deploy to Kubernetes
+        env:
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Update the deployment manifest with the new image
+          sed -i "s|IMAGE_TO_REPLACE|$ECR_REPOSITORY/dataprocessingapp:$IMAGE_TAG|g" kubernets/manifest/deployment.yaml
+          
+          # Apply Kubernetes manifests
+          sudo kubectl apply -f kubernets/manifest/deployment.yaml -n data-processing
+          sudo kubectl apply -f kubernets/manifest/service.yaml -n data-processing
+
+      - name: Verify deployment
+        run: |
+          sudo kubectl rollout status deployment/data-processing-app -n data-processing
