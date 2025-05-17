@@ -32,11 +32,12 @@ jobs:
         env:
           KUBECONFIG: ${{ secrets.KUBECONFIG }}
         run: |
-          echo "Using kubeconfig from secrets"
+          echo "${{ secrets.KUBECONFIG }}" > kubeconfig.yaml
+          export KUBECONFIG=kubeconfig.yaml
 
       - name: Create namespace if not exists
         run: |
-           kubectl apply -f kubernets/manifest/namespace.yaml
+           kubectl apply -f kubernets/manifest/namespace.yaml --kubeconfig=kubeconfig.yaml
 
       - name: Deploy to Kubernetes
         env:
@@ -47,9 +48,9 @@ jobs:
           sed -i "s|IMAGE_TO_REPLACE|$ECR_REPOSITORY/dataprocessingapp:$IMAGE_TAG|g" kubernets/manifest/deployment.yaml
           
           # Apply Kubernetes manifests
-           kubectl apply -f kubernets/manifest/deployment.yaml -n data-processing
-           kubectl apply -f kubernets/manifest/service.yaml -n data-processing
+           kubectl apply -f kubernets/manifest/deployment.yaml -n data-processing --kubeconfig=kubeconfig.yaml
+           kubectl apply -f kubernets/manifest/service.yaml -n data-processing --kubeconfig=kubeconfig.yaml
 
       - name: Verify deployment
         run: |
-          kubectl rollout status deployment/data-processing-app -n data-processing
+          kubectl rollout status deployment/data-processing-app -n data-processing --kubeconfig=kubeconfig.yaml
